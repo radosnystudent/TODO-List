@@ -3,7 +3,7 @@ from datetime import datetime
 from notification import setNotification
 import os.path
 
-def readCSV() -> list:
+def readCSV(number=None) -> list:
     allTasks = []
     if os.path.isfile('./datafiles/datafile.csv'):
         with open('./datafiles/datafile.csv', 'r') as csfile:
@@ -34,7 +34,7 @@ class Task:
         self.datetime = datetime
 
     def __str__(self) -> str:
-        return f'{self.title}: {self.task}\t Data: {self.datetime}'
+        return f'{self.title}: {self.task} Przypomnienie: {self.datetime["day"]}/{self.datetime["month"]}/{self.datetime["year"]} {self.datetime["hour"]}:{self.datetime["minute"]}'
 
     def writeToCsv(self):
         with open('./datafiles/datafile.csv', 'a', newline='', encoding='utf-8') as csfile:
