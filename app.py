@@ -3,21 +3,30 @@ import tkinter.scrolledtext as tkst
 from tkinter import messagebox
 from tkcalendar import DateEntry
 from datetime import datetime
-from task import Task, readCSV
-import _thread as th
+import threading as th
 from time import sleep
 from database import MyDatabase
 
-appRunning = True
+# appRunning = True
+# allTask = list()
+
+def compareDates(date, h, mn):
+    stamp = datetime.now().strftime("%Y-%m-%d %H:%M")
+    mydate = datetime.strptime(f'{date} {h}:{mn}', "%Y-%m-%d %H:%M")
+    if mydate >= datetime.strptime(stamp, "%Y-%m-%d %H:%M"):
+        return True
+    return False
 
 class App(tk.Frame):
 
     def __init__(self):
         self.root = tk.Tk()
         tk.Frame.__init__(self, self.root)
-        self.allTask = list()
-
         self.db = MyDatabase()
+        self.allTask = list()
+        self.appRunning = True
+        self.thread = th.Thread(target=self.checkNotification, args=())
+        self.thread.start()
         self.init_window()
 
     def init_window(self):
@@ -44,22 +53,21 @@ class App(tk.Frame):
         self.updateTaskBox()
 
     def updateTaskBox(self):
+        self.taskBox.delete(0, 'end')
         if not self.allTask:
-            self.allTask = readCSV()
+            self.allTask = self.db.readDB()
         else:
-            readTask = readCSV()
-            for task in readTask:
-                if task not in self.allTask:
-                    self.allTask.append(task)
+            self.allTask += self.db.readDB()
 
         for task in self.allTask:
             self.taskBox.insert('end', task.__str__())
 
-        print(self.db.readDB())
-
     def destroyApp(self):
-        global appRunning
-        appRunning = False
+        self.appRunning = False
+        self.db.saveChanges()
+        self.db.closeConnection()
+        messagebox.showinfo('Zamykanie', 'Poczekaj na zapisanie zmian..\nProgram wyłączy się sam po zapisaniu wszystkich zmian.')
+        self.thread.join()
         self.root.destroy()
 
     def createButton(self, master, bg, text, font, command, x, y, anchor):
@@ -127,45 +135,28 @@ class App(tk.Frame):
         task = self.task_entry.get("1.0", tk.END).rstrip()
         notification = True if self.option.get() == 'TAK' else False
         date = str(self.date.get_date()).split('-')
-        if notification:
-            datetime = {'year': date[0],
-                        'month': date[1],
-                        'day': date[2],
-                        'hour': self.hourstr.get(),
-                        'minute': self.minstr.get()}
-        else:
-            datetime = None
+        hour = self.hourstr.get() if int(self.hourstr.get()) >= 10 else "0" + self.hourstr.get()
+        minute = self.minstr.get() if int(self.minstr.get()) >= 10 else "0" + self.minstr.get()
 
         if title and task:
-            newTask = Task(title, task, notification, datetime)
-            newTask.writeToCsv()
-            readCSV()
-            self.updateTaskBox()
-            if notification:
-                self.db.update(title, task, f'{date[2]}/{date[1]}/{date[0]} {self.hourstr.get()}:{self.minstr.get()}')
+            if self.db.checkTitle(title):
+                messagebox.showerror('Nieprawidłowe dane', 'Istnieje już zadanie o takim tytule!')
             else:
-                self.db.update(title, task, '')
-            self.newWindow.destroy()
+                if notification and compareDates(self.date.get_date(), hour, minute):
+                    self.db.update(title, task, f'{date[2]}/{date[1]}/{date[0]}/{hour}/{minute}')
+                else:
+                    self.db.update(title, task, '')
+                self.updateTaskBox()
+                self.newWindow.destroy()
         else:
             messagebox.showerror('Niepełne dane', 'Musisz podać tytuł i treść zadania.')
 
+    def checkNotification(self):
+        while self.appRunning:
+            if self.allTask:
+                for task in self.allTask:
+                    task.compareDatetime()
+            sleep(10)
+
 app = App()
-
-def checkNotification():
-    global appRunning
-    allTasks = list()
-    while appRunning:
-        readedTasks = readCSV()
-        if readedTasks:
-            for task in readedTasks:
-                if task not in allTasks:
-                    allTasks.append(task)
-
-        if allTasks:
-            for task in allTasks:
-                task.compareDatetime()
-        sleep(20)
-
-th.start_new_thread(checkNotification, ())
-
 app.root.mainloop()
