@@ -17,6 +17,22 @@ def compareDates(date, h, mn):
         return True
     return False
 
+def createButton(master, bg, text, font, command, x, y, anchor):
+    return tk.Button(master,
+                     bg=bg,
+                     text=text,
+                     font=font,
+                     command=command
+                     ).place(x=x, y=y, anchor=anchor)
+
+def createLabel(master, text, bg, font, anchor, x, y, placeAnchor):
+    tk.Label(master,
+             text=text,
+             bg=bg,
+             font=font,
+             anchor=anchor
+             ).place(x=x, y=y, anchor=placeAnchor)
+
 class App(tk.Frame):
 
     def __init__(self):
@@ -46,9 +62,9 @@ class App(tk.Frame):
         self.taskBox.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.taskBox.yview)
 
-        self.createButton(self.root, '#6fdaed', "Dodaj nowe zadanie", ("Helvetica", 12, 'bold'), self.new_window, 700, 50, 'center')
+        createButton(self.root, '#6fdaed', "Dodaj nowe zadanie", ("Helvetica", 12, 'bold'), self.new_window, 700, 50, 'center')
 
-        self.createButton(self.root, '#6fdaed', "Zamknij okno", ("Helvetica", 12, 'bold'), self.destroyApp, 780, 580, 'e')
+        createButton(self.root, '#6fdaed', "Zamknij okno", ("Helvetica", 12, 'bold'), self.destroyApp, 780, 580, 'e')
 
         self.updateTaskBox()
 
@@ -70,21 +86,6 @@ class App(tk.Frame):
         self.thread.join()
         self.root.destroy()
 
-    def createButton(self, master, bg, text, font, command, x, y, anchor):
-        return tk.Button(master,
-                         bg=bg,
-                         text=text,
-                         font=font,
-                         command=command).place(x=x, y=y, anchor=anchor)
-
-    def createLabel(self, master, text, bg, font, anchor, x, y, placeAnchor):
-        tk.Label(master,
-                 text=text,
-                 bg=bg,
-                 font=font,
-                 anchor=anchor
-                 ).place(x=x, y=y, anchor=placeAnchor)
-
     def new_window(self):
         self.newWindow = tk.Toplevel(self.root)
         self.newWindow.title('Dodaj zadanie')
@@ -92,15 +93,15 @@ class App(tk.Frame):
         self.newWindow.configure(background='#894bb3')
         self.newWindow.resizable(False, False)
 
-        self.createLabel(self.newWindow, 'Nazwa zadania', '#894bb3', ("Helvetica", 12, 'bold'), tk.CENTER, 150, 15, 'center')
+        createLabel(self.newWindow, 'Nazwa zadania', '#894bb3', ("Helvetica", 12, 'bold'), tk.CENTER, 150, 15, 'center')
         self.title_entry = tk.Entry(self.newWindow)
         self.title_entry.place(x=150, y=45, anchor="center", width=100, height=30)
 
-        self.createLabel(self.newWindow, 'Treść', '#894bb3', ("Helvetica", 12, 'bold'), tk.CENTER, 150, 81, 'center')
+        createLabel(self.newWindow, 'Treść', '#894bb3', ("Helvetica", 12, 'bold'), tk.CENTER, 150, 81, 'center')
         self.task_entry = tk.Text(self.newWindow)
         self.task_entry.place(x=150, y=135, anchor="center", width=200, height=90)
 
-        self.createLabel(self.newWindow, 'Przypomnienie', '#894bb3', ("Helvetica", 12, 'bold'), tk.CENTER, 150, 200, 'center')
+        createLabel(self.newWindow, 'Przypomnienie', '#894bb3', ("Helvetica", 12, 'bold'), tk.CENTER, 150, 200, 'center')
         self.option = tk.StringVar(self.newWindow, 'TAK')
 
         tk.Radiobutton(self.newWindow, text="Tak", variable=self.option, value='TAK', bg='#894bb3').place(x=130, y=240, anchor='center')
@@ -111,8 +112,8 @@ class App(tk.Frame):
         self.date = DateEntry(self.newWindow, width=30, bg="black", fg="white", year=datetime.now().year)
         self.date.place(x=150, y=280, anchor="center")
 
-        self.createButton(self.newWindow, '#6fdaed', 'Zatwierdź', ("Helvetica", 12, 'bold'), self.submitTask, 120, 380, 'e')
-        self.createButton(self.newWindow, '#6fdaed', 'Anuluj', ("Helvetica", 12, 'bold'), self.newWindow.destroy, 280, 380, 'e')
+        createButton(self.newWindow, '#6fdaed', 'Zatwierdź', ("Helvetica", 12, 'bold'), self.submitTask, 120, 380, 'e')
+        createButton(self.newWindow, '#6fdaed', 'Anuluj', ("Helvetica", 12, 'bold'), self.newWindow.destroy, 280, 380, 'e')
 
     def timePicker(self, window):
         self.hourstr = tk.StringVar(window, str(datetime.now().hour))

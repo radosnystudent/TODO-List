@@ -19,6 +19,6 @@ class Task:
             stamp = datetime.now()
             if self.datetime['year'] == str(stamp.strftime('%Y')) and self.datetime['month'] == str(stamp.strftime('%m')) and self.datetime['day'] == str(stamp.strftime('%d')) and \
                self.datetime['hour'] == str(stamp.strftime('%H')) and self.datetime['minute'] == str(stamp.strftime('%M')):
-                setNotification(self.title, self.task, 5, './notification/icons/task_icon.ico')
+                setNotification(self.title, self.task, 20, './notification/icons/task_icon.ico')
                 self.notification = False
                 self.datetime = None
