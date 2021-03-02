@@ -9,20 +9,20 @@ class MyDatabase:
         self.__cur.execute('CREATE TABLE IF NOT EXISTS tasks (title TEXT PRIMARY KEY, task TEXT NOT NULL, datenotification TEXT, readed INT)')
         self.__cur.execute('UPDATE tasks SET readed = ? WHERE readed = ?', (0, 1,))
 
-    def update(self, title, task, date):
+    def update(self, title: str, task: str, date: str):
         self.__cur.execute('INSERT INTO tasks VALUES (?, ?, ?, ?)', (title, task, date, 0,))
 
-    def delete(self, title):
+    def delete(self, title: str):
         self.__cur.execute('DELETE FROM tasks WHERE title = ?', (title,))
 
-    def checkTitle(self, title):
+    def checkTitle(self, title: str):
         result = self.__cur.execute('SELECT * FROM tasks WHERE title = ?', (title,))
         row = result.fetchall()
         if row:
             return True
         return False
 
-    def readDB(self):
+    def readDB(self) -> list:
         alltasks = list()
         result = self.__cur.execute('SELECT * FROM tasks WHERE readed = ?', (0,))
         rows = result.fetchall()

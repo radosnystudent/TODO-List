@@ -2,7 +2,7 @@ from win10toast import ToastNotifier
 import time
 
 
-def setNotification(title, msg, duration, icon=None):
+def setNotification(title: str, msg: str, duration: int, icon=None):
     toaster = ToastNotifier()
     toaster.show_toast(title, msg, icon_path=icon, duration=duration)
 
