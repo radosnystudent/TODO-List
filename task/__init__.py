@@ -4,11 +4,13 @@ from notification import setNotification
 
 class Task:
 
-    def __init__(self, title: str, task: str, notification=False, datetime=None) -> None:
+    def __init__(self, title: str, task: str, notification=False, datetime=None, occure_gap=None, repeat=None) -> None:
         self.__title = title
         self.__task = task
         self.__notification = notification
         self.__datetime = datetime
+        self.__occure_gap = occure_gap
+        self.__repeat = repeat
 
     def getTitle(self) -> str:
         return self.__title
