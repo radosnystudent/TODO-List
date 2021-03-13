@@ -7,7 +7,7 @@ import threading as th
 from time import sleep
 # ---------------------------- #
 from database import MyDatabase
-from functions import create_button, create_entry, create_label, create_new_window_object, create_radiobutton, compare_dates
+from functions import create_button, create_entry, create_label, create_new_window_object, create_radiobutton, compare_dates, add_task
 
 class App(tk.Frame):
 
@@ -245,31 +245,21 @@ class App(tk.Frame):
 
                         if not howManyRepeats and notification_gap != "Jeden raz":
                             messagebox.showerror('Nieprawidłowe dane', 'Nie podano liczby powtórzeń wydarzenia')
-
-                        if notification_gap == 'CUSTOM' and not self.__repeatNotif.get():
-                            messagebox.showerror('Nieprawidłowe dane', 'Nie podano co ile dni ma być wyświetlane przypomnienie!')
                         else:
                             if notification_gap == 'CUSTOM':
-                                occure_gap = 'every ' + str(self.__repeatNotif.get()) + ' days'
+                                if not self.__repeatNotif.get():
+                                    messagebox.showerror('Nieprawidłowe dane', 'Nie podano co ile dni ma być wyświetlane przypomnienie!')
+                                else:
+                                    add_task(self.__db, title, task, date, hour, minute, howManyRepeats, notification_gap, self.__repeatNotif.get())
                             else:
-                                occure_gap = notification_gap
-
-                            if occure_gap == 'Jeden raz':
-                                repeat = 1
-                            else:
-                                repeat = int(howManyRepeats)
-
-                            dateWithTime = f'{date[2]}/{date[1]}/{date[0]}/{hour}/{minute}'
-
-                            self.__db.addTask(title, task, dateWithTime, occure_gap, repeat)
-                    else:
+                                add_task(self.__db, title, task, date, hour, minute, howManyRepeats, notification_gap)
+                    elif not notification:
                         self.__db.addTask(title, task, '')
-                    self.update_task_box()
-                    # self.__newWindow.destroy()
             else:
                 messagebox.showerror('Nieprawidłowe dane', 'Tytuł zadania musi zaczynać się cyfrą lub literą')
         else:
             messagebox.showerror('Niepełne dane', 'Musisz podać tytuł i treść zadania.')
+        self.update_task_box()
         self.destroy_task_windows()
 
     def check_notification(self):

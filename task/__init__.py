@@ -1,6 +1,6 @@
 from datetime import datetime
 from notification import setNotification
-
+from functions import string_to_date_object, add_days, add_months, add_years
 
 class Task:
 
@@ -37,5 +37,31 @@ class Task:
             if self.__datetime['year'] == str(stamp.strftime('%Y')) and self.__datetime['month'] == str(stamp.strftime('%m')) and self.__datetime['day'] == str(stamp.strftime('%d')) and \
                self.__datetime['hour'] == str(stamp.strftime('%H')) and self.__datetime['minute'] == str(stamp.strftime('%M')):
                 setNotification(self.__title, self.__task, 20, './notification/icons/task_icon.ico')
-                self.__notification = False
-                self.__datetime = None
+                self.update_notification()
+
+    def delete_notification(self):
+        self.__notification = False
+        self.__datetime = None
+        self.__occure_gap = None
+        self.__repeat = None
+
+    def update_notification(self):
+        if self.__occure_gap == 'ONCE':
+            self.delete_notification()
+        else:
+            if self.__repeat >= 0:
+                if self.__repeat != 0:
+                    self.__repeat = self.__repeat - 1 if self.__repeat > 1 else -1
+                if self.__occure_gap == 'WEEK':
+                    next_date = add_days(string_to_date_object(f'{self.getDate()[0]}'), 7)
+                elif self.__occure_gap == 'MONTH':
+                    next_date = add_months(string_to_date_object(f'{self.getDate()[0]}'), 1)
+                elif self.__occure_gap == 'YEAR':
+                    next_date = add_years(string_to_date_object(f'{self.getDate()[0]}'), 1)
+                elif 'CUSTOM' in self.__occure_gap:
+                    next_date = add_days(string_to_date_object(f'{self.getDate()[0]}'), int(self.__occure_gap[-1]))
+                self.__datetime['year'] = next_date[0]
+                self.__datetime['month'] = next_date[1]
+                self.__datetime['day'] = next_date[2]
+            else:
+                self.delete_notification()
