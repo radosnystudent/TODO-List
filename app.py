@@ -6,7 +6,7 @@ from datetime import datetime
 import threading as th
 from time import sleep
 # ---------------------------- #
-from database import MyDatabase
+from database import addTask, deleteTask, readDB, checkTitle, update_notification, update_readed_column
 from functions import create_button, create_entry, create_label, create_new_window_object, create_radiobutton, compare_dates, add_task
 
 class App(tk.Frame):
@@ -14,12 +14,15 @@ class App(tk.Frame):
     def __init__(self):
         self.__root = tk.Tk()
         tk.Frame.__init__(self, self.__root)
-        self.__db = MyDatabase()
         self.__allTask = list()
         self.__appRunning = True
         self.__root.overrideredirect(True)
-        # self.__root.attributes('-topmost', True)
-        # self.__root.attributes('-topmost', False)
+        self.__root.attributes('-topmost', True)
+        self.__root.attributes('-topmost', False)
+        self.__focus_check = tk.BooleanVar()
+        self.__root.bind('<FocusIn>', lambda _: self.__focus_check.set(True))
+        self.__root.bind('<FocusOut>', lambda _: self.__focus_check.set(False))
+
         self.__helveticaTwelve = ('Helvetica', 12, 'bold')
         self.__helveticaTwenty = ('Helvetica', 20, 'bold')
         self.__trayMenu = None
@@ -82,10 +85,10 @@ class App(tk.Frame):
 
         self.__taskBoxTitle = create_label(self.__root, '', self.__helveticaTwenty, tk.CENTER, 260, 1, 'nw')
         self.__taskBox = create_label(self.__root, '', self.__helveticaTwelve, tk.CENTER, 260, 63, 'nw', 300)
-        self.__titleBox.bind("<<ListboxSelect>>", self.callback)
+        self.__titleBox.bind("<<ListboxSelect>>", self.task_details)
 
-        self.__notificationTitle = create_label(self.__root, '', self.__helveticaTwenty, tk.CENTER, 260, 500, 'nw')
-        self.__notificationBox = create_label(self.__root, '', self.__helveticaTwenty, tk.CENTER, 260, 550, 'nw')
+        self.__notificationTitle = create_label(self.__root, '', self.__helveticaTwenty, tk.CENTER, 260, 450, 'nw')
+        self.__notificationBox = create_label(self.__root, '', self.__helveticaTwelve, tk.CENTER, 260, 500, 'nw')
 
         create_button(self.__root, '#6fdaed', "Dodaj nowe zadanie", self.__helveticaTwelve, self.new_window, 590, 50, 'nw', 3)
         create_button(self.__root, '#6fdaed', "Usuń wybrane zadanie", self.__helveticaTwelve, self.delete_task, 590, 100, 'nw', 3)
@@ -94,7 +97,7 @@ class App(tk.Frame):
 
         self.update_task_box()
 
-    def callback(self, event):
+    def task_details(self, event):
         selection = event.widget.curselection()
         if selection:
             index = selection[0]
@@ -119,21 +122,22 @@ class App(tk.Frame):
                 value = self.__titleBox.get(self.__titleBox.curselection())
                 value = value[value.index(')') + 1:].lstrip()
                 index = None
+                print(self.__allTask)
                 for task in self.__allTask:
                     if task.getTitle() == value:
                         index = self.__allTask.index(task)
                 self.__allTask.remove(self.__allTask[index])
-                self.__db.delete(value)
+                deleteTask(value)
                 self.update_task_box()
         except Exception as ex:
             messagebox.showerror('Błąd. Nieprawidłowe dane.', 'Nie wybrałeś żadnego zadania do usunięcia!')
 
-    def update_task_box(self):
+    def update_task_box(self, db=None):
         self.__titleBox.delete(0, 'end')
         if not self.__allTask:
-            self.__allTask = self.__db.readDB()
+            self.__allTask = readDB()
         else:
-            self.__allTask += self.__db.readDB()
+            self.__allTask += readDB()
 
         for task in self.__allTask:
             getDate = task.getDate()
@@ -154,8 +158,7 @@ class App(tk.Frame):
         self.__appRunning = False
         messagebox.showinfo('Zamykanie', 'Poczekaj na zapisanie zmian..\nProgram wyłączy się sam po zapisaniu wszystkich zmian.')
         self.__thread.join()
-        self.__db.saveChanges()
-        self.__db.closeConnection()
+        update_readed_column()
         self.__root.destroy()
 
     def new_window(self, edit=None):
@@ -206,9 +209,10 @@ class App(tk.Frame):
     def destroy_task_windows(self):
         self.__notifWindow.destroy()
         self.__newWindow.destroy()
-        self.__root.lift()
-        self.__root.attributes('-topmost', True)
-        self.__root.attributes('-topmost', False)
+        # self.__root.lift()
+        # self.__root.attributes('-topmost', True)
+        # self.__root.attributes('-topmost', False)
+        # self.__root.lift()
 
     def time_picker(self, window):
         self.__hourstr = tk.StringVar(window, str(datetime.now().hour))
@@ -236,7 +240,7 @@ class App(tk.Frame):
 
         if title and task:
             if title[0].isalpha() or title[0].isdigit():
-                if self.__db.checkTitle(title):
+                if checkTitle(title):
                     messagebox.showerror('Nieprawidłowe dane', 'Istnieje już zadanie o takim tytule!')
                 else:
                     if notification and compare_dates(self.__date.get_date(), hour, minute):
@@ -247,14 +251,14 @@ class App(tk.Frame):
                             messagebox.showerror('Nieprawidłowe dane', 'Nie podano liczby powtórzeń wydarzenia')
                         else:
                             if notification_gap == 'CUSTOM':
-                                if not self.__repeatNotif.get():
+                                if not self.__repeatNotif.get("1.0", 'end-1c'):
                                     messagebox.showerror('Nieprawidłowe dane', 'Nie podano co ile dni ma być wyświetlane przypomnienie!')
                                 else:
-                                    add_task(self.__db, title, task, date, hour, minute, howManyRepeats, notification_gap, self.__repeatNotif.get())
+                                    add_task(addTask, title, task, date, hour, minute, howManyRepeats, notification_gap, self.__repeatNotif.get("1.0", 'end-1c'))
                             else:
-                                add_task(self.__db, title, task, date, hour, minute, howManyRepeats, notification_gap)
+                                add_task(addTask, title, task, date, hour, minute, howManyRepeats, notification_gap)
                     elif not notification:
-                        self.__db.addTask(title, task, '')
+                        addTask(title, task, '')
             else:
                 messagebox.showerror('Nieprawidłowe dane', 'Tytuł zadania musi zaczynać się cyfrą lub literą')
         else:
@@ -264,9 +268,14 @@ class App(tk.Frame):
 
     def check_notification(self):
         while self.__appRunning:
+            if not self.__focus_check:
+                self.__root.lift()
+                self.__root.attributes('-topmost', True)
+                self.__root.attributes('-topmost', False)
             if self.__allTask:
                 for task in self.__allTask:
-                    task.compareDatetime()
+                    if task.compareDatetime(update_notification):
+                        self.update_task_box()
             sleep(5)
 
 app = App()

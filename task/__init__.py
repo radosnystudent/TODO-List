@@ -19,7 +19,12 @@ class Task:
         return self.__task
 
     def getNotificationDate(self) -> str:
-        return f'{self.__datetime["day"]}-{self.__datetime["month"]}-{self.__datetime["year"]} {self.__datetime["hour"]}:{self.__datetime["minute"]}'
+        if self.__notification:
+            string = f'Następne powiadomienie: {self.__datetime["day"]}-{self.__datetime["month"]}-{self.__datetime["year"]} {self.__datetime["hour"]}:{self.__datetime["minute"]}\n'
+            string += f'{self.__occure_gap} ile jeszcze: {self.__repeat}'
+        else:
+            string = 'Brak powiadomień'
+        return string
 
     def getDate(self) -> list:
         return [f'{self.__datetime["year"]}-{self.__datetime["month"]}-{self.__datetime["day"]}', f'{self.__datetime["hour"]}', f'{self.__datetime["minute"]}'] if self.__notification else None
@@ -31,13 +36,17 @@ class Task:
         return f'{self.__title}: {self.__task} Przypomnienie: {self.__datetime["day"]}/{self.__datetime["month"]}/{self.__datetime["year"]} {self.__datetime["hour"]}:' \
             f'{self.__datetime["minute"]}' if self.__notification else f'{self.__title}: {self.__task}'
 
-    def compareDatetime(self):
+    def compareDatetime(self, callback: callable) -> bool:
         if self.__notification:
             stamp = datetime.now()
             if self.__datetime['year'] == str(stamp.strftime('%Y')) and self.__datetime['month'] == str(stamp.strftime('%m')) and self.__datetime['day'] == str(stamp.strftime('%d')) and \
                self.__datetime['hour'] == str(stamp.strftime('%H')) and self.__datetime['minute'] == str(stamp.strftime('%M')):
-                setNotification(self.__title, self.__task, 20, './notification/icons/task_icon.ico')
                 self.update_notification()
+                date_string = f'{self.__datetime["day"]}/{self.__datetime["month"]}/{self.__datetime["year"]}/{self.__datetime["hour"]}/{self.__datetime["minute"]}'
+                callback(self.__title, date_string, self.__occure_gap, self.__repeat)
+                setNotification(self.__title, self.__task, 10, './notification/icons/task_icon.ico')
+                return True
+        return False
 
     def delete_notification(self):
         self.__notification = False

@@ -73,7 +73,7 @@ def create_label(master, text: str, font: str, anchor, x: int, y: int, placeAnch
     return label
 
 
-def add_task(db, title: str, task: str, date: list, hour: str, minute: str, howManyRepeats: str, notification_gap: str, custom_repeat=None):
+def add_task(callback: callable, title: str, task: str, date: list, hour: str, minute: str, howManyRepeats: str, notification_gap: str, custom_repeat=None):
     if notification_gap == 'CUSTOM':
         occure_gap = notification_gap + str(custom_repeat)
     else:
@@ -86,4 +86,4 @@ def add_task(db, title: str, task: str, date: list, hour: str, minute: str, howM
 
     dateWithTime = f'{date[2]}/{date[1]}/{date[0]}/{hour}/{minute}'
 
-    db.addTask(title, task, dateWithTime, occure_gap, repeat)
+    callback(title, task, dateWithTime, occure_gap, repeat)
