@@ -3,6 +3,9 @@ from datetime import datetime, timedelta
 import calendar
 from dateutil import relativedelta
 
+def get_actual_date_with_time():
+    return datetime.strptime(datetime.now().isoformat(timespec='minutes', sep=' '), '%Y-%m-%d %H:%M')
+
 def string_to_date_object(stringDate: str):
     return datetime.strptime(stringDate, '%Y-%m-%d').date()
 

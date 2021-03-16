@@ -2,12 +2,12 @@ import tkinter as tk
 import tkinter.scrolledtext as tkst
 from tkinter import messagebox
 from tkcalendar import DateEntry
-from datetime import datetime
+from datetime import datetime, timedelta
 import threading as th
 from time import sleep
 # ---------------------------- #
-from database import addTask, deleteTask, readDB, checkTitle, update_notification, update_readed_column
-from functions import create_button, create_entry, create_label, create_new_window_object, create_radiobutton, compare_dates, add_task
+import database as mydb
+import functions as myfun
 
 class App(tk.Frame):
 
@@ -76,24 +76,24 @@ class App(tk.Frame):
         self.__titleBox = tk.Listbox(self.__frame, width=18, height=20, font=('Helvetica', 16, 'bold'), selectmode='SINGLE')
         self.__titleBox.pack(side='left', fill='y')
 
-        create_label(self.__root, 'Zadania', self.__helveticaTwenty, tk.S, 10, 18, 'w')
+        myfun.create_label(self.__root, 'Zadania', self.__helveticaTwenty, tk.S, 10, 18, 'w')
         scrollbar = tk.Scrollbar(self.__frame, orient='vertical')
         scrollbar.place(x=550, y=300, anchor='center')
         scrollbar.pack(side='right', fill='y')
         self.__titleBox.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.__titleBox.yview)
 
-        self.__taskBoxTitle = create_label(self.__root, '', self.__helveticaTwenty, tk.CENTER, 260, 1, 'nw')
-        self.__taskBox = create_label(self.__root, '', self.__helveticaTwelve, tk.CENTER, 260, 63, 'nw', 300)
+        self.__taskBoxTitle = myfun.create_label(self.__root, '', self.__helveticaTwenty, tk.CENTER, 260, 1, 'nw')
+        self.__taskBox = myfun.create_label(self.__root, '', self.__helveticaTwelve, tk.CENTER, 260, 63, 'nw', 300)
         self.__titleBox.bind("<<ListboxSelect>>", self.task_details)
 
-        self.__notificationTitle = create_label(self.__root, '', self.__helveticaTwenty, tk.CENTER, 260, 450, 'nw')
-        self.__notificationBox = create_label(self.__root, '', self.__helveticaTwelve, tk.CENTER, 260, 500, 'nw')
+        self.__notificationTitle = myfun.create_label(self.__root, '', self.__helveticaTwenty, tk.CENTER, 260, 450, 'nw')
+        self.__notificationBox = myfun.create_label(self.__root, '', self.__helveticaTwelve, tk.CENTER, 260, 500, 'nw')
 
-        create_button(self.__root, '#6fdaed', "Dodaj nowe zadanie", self.__helveticaTwelve, self.new_window, 590, 50, 'nw', 3)
-        create_button(self.__root, '#6fdaed', "Usuń wybrane zadanie", self.__helveticaTwelve, self.delete_task, 590, 100, 'nw', 3)
-        create_button(self.__root, '#6fdaed', 'Edytuj wybrane zadanie', self.__helveticaTwelve, self.edit_task, 590, 150, 'nw', 3)
-        create_button(self.__root, '#6fdaed', "Zamknij okno", self.__helveticaTwelve, self.on_closing, 590, 560, 'nw', 3)
+        myfun.create_button(self.__root, '#6fdaed', "Dodaj nowe zadanie", self.__helveticaTwelve, self.new_window, 590, 50, 'nw', 3)
+        myfun.create_button(self.__root, '#6fdaed', "Usuń wybrane zadanie", self.__helveticaTwelve, self.delete_task, 590, 100, 'nw', 3)
+        myfun.create_button(self.__root, '#6fdaed', 'Edytuj wybrane zadanie', self.__helveticaTwelve, self.edit_task, 590, 150, 'nw', 3)
+        myfun.create_button(self.__root, '#6fdaed', "Zamknij okno", self.__helveticaTwelve, self.on_closing, 590, 560, 'nw', 3)
 
         self.update_task_box()
 
@@ -127,22 +127,22 @@ class App(tk.Frame):
                     if task.getTitle() == value:
                         index = self.__allTask.index(task)
                 self.__allTask.remove(self.__allTask[index])
-                deleteTask(value)
+                mydb.deleteTask(value)
                 self.update_task_box()
         except Exception as ex:
             messagebox.showerror('Błąd. Nieprawidłowe dane.', 'Nie wybrałeś żadnego zadania do usunięcia!')
 
-    def update_task_box(self, db=None):
+    def update_task_box(self):
         self.__titleBox.delete(0, 'end')
         if not self.__allTask:
-            self.__allTask = readDB()
+            self.__allTask = mydb.readDB()
         else:
-            self.__allTask += readDB()
+            self.__allTask += mydb.readDB()
 
         for task in self.__allTask:
             getDate = task.getDate()
             self.__titleBox.insert('end', str(self.__allTask.index(task) + 1) + ') ' + task.getTitle())
-            if getDate is None or compare_dates(getDate[0], getDate[1], getDate[2]) is False:
+            if getDate is None or myfun.compare_dates(getDate[0], getDate[1], getDate[2]) is False:
                 self.__titleBox.itemconfig(self.__allTask.index(task), foreground='red')
 
     def edit_task(self):
@@ -150,59 +150,61 @@ class App(tk.Frame):
         self.__editWindow.title('Edytuj zadanie')
         self.__editWindow.geometry(f'{300}x{400}+{int(self.__editWindow.winfo_screenwidth() / 3)}+{int(self.__editWindow.winfo_screenheight() / 3)}')
         self.__editWindow.resizable(False, False)
-        # create_button(self.__editWindow, '#6fdaed', 'Edytuj tytuł', self.__helveticaTwelve, print(':)'), 20, 10, 'nw', 3)
-        # create_button(self.__editWindow, '#6fdaed', 'Edytuj treść', self.__helveticaTwelve, print(':)'), 20, 50, 'nw', 3)
-        # create_button(self.__editWindow, '#6fdaed', 'Edytuj powiadomienie', self.__helveticaTwelve, print(':)'), 20, 90, 'nw', 3)
+        # myfun.create_button(self.__editWindow, '#6fdaed', 'Edytuj tytuł', self.__helveticaTwelve, print(':)'), 20, 10, 'nw', 3)
+        # myfun.create_button(self.__editWindow, '#6fdaed', 'Edytuj treść', self.__helveticaTwelve, print(':)'), 20, 50, 'nw', 3)
+        # myfun.create_button(self.__editWindow, '#6fdaed', 'Edytuj powiadomienie', self.__helveticaTwelve, print(':)'), 20, 90, 'nw', 3)
 
     def destroy_app(self):
         self.__appRunning = False
         messagebox.showinfo('Zamykanie', 'Poczekaj na zapisanie zmian..\nProgram wyłączy się sam po zapisaniu wszystkich zmian.')
         self.__thread.join()
-        update_readed_column()
+        mydb.update_readed_column()
         self.__root.destroy()
 
     def new_window(self, edit=None):
-        self.__newWindow = create_new_window_object('Dodaj zadanie', f'{300}x{400}', False)
-        self.__notifWindow = create_new_window_object('Ustaw przypomnienie', f'{300}x{400}', False)
+        self.__newWindow = myfun.create_new_window_object('Dodaj zadanie', f'{300}x{400}', False)
+        self.__notifWindow = myfun.create_new_window_object('Ustaw przypomnienie', f'{300}x{400}', False)
 
         self.__notifWindow.iconify()
 
-        create_label(self.__newWindow, 'Nazwa zadania', self.__helveticaTwelve, tk.CENTER, 150, 15, 'center')
-        self.__title_entry = create_entry(self.__newWindow, 150, 45, 'center', 100, 30)
+        myfun.create_label(self.__newWindow, 'Nazwa zadania', self.__helveticaTwelve, tk.CENTER, 150, 15, 'center')
+        self.__title_entry = myfun.create_entry(self.__newWindow, 150, 45, 'center', 100, 30)
 
-        create_label(self.__newWindow, 'Treść', self.__helveticaTwelve, tk.CENTER, 150, 81, 'center')
-        self.__task_entry = create_entry(self.__newWindow, 150, 135, 'center', 200, 90)
+        myfun.create_label(self.__newWindow, 'Treść', self.__helveticaTwelve, tk.CENTER, 150, 81, 'center')
+        self.__task_entry = myfun.create_entry(self.__newWindow, 150, 135, 'center', 200, 90)
 
-        create_label(self.__newWindow, 'Przypomnienie', self.__helveticaTwelve, tk.CENTER, 150, 200, 'center')
+        myfun.create_label(self.__newWindow, 'Przypomnienie', self.__helveticaTwelve, tk.CENTER, 150, 200, 'center')
         self.__option = tk.StringVar(self.__newWindow, 'TAK')
 
-        create_radiobutton(self.__newWindow, "Tak", self.__option, 'TAK', 130, 240, 'center')
-        create_radiobutton(self.__newWindow, "Nie", self.__option, 'NIE', 170, 240, 'center')
+        myfun.create_radiobutton(self.__newWindow, "Tak", self.__option, 'TAK', 130, 240, 'center')
+        myfun.create_radiobutton(self.__newWindow, "Nie", self.__option, 'NIE', 170, 240, 'center')
 
-        create_button(self.__newWindow, '#6fdaed', 'Ustaw przypomnienie', self.__helveticaTwelve, self.__notifWindow.deiconify, 150, 300, 'center', 3)
+        # myfun.create_button(self.__newWindow, '#6fdaed', 'Ustaw przypomnienie', self.__helveticaTwelve, self.__notifWindow.deiconify, 150, 300, 'center', 3)
+        myfun.create_button(self.__newWindow, '#6fdaed', 'Ustaw przypomnienie', self.__helveticaTwelve, self.notification_window, 150, 300, 'center', 3)
 
-        create_button(self.__newWindow, '#6fdaed', 'Zatwierdź', self.__helveticaTwelve, self.submit_task, 120, 380, 'e', 3)
-        create_button(self.__newWindow, '#6fdaed', 'Anuluj', self.__helveticaTwelve, self.destroy_task_windows, 280, 380, 'e', 3)
-        self.notification_window()
+        myfun.create_button(self.__newWindow, '#6fdaed', 'Zatwierdź', self.__helveticaTwelve, self.submit_task, 120, 380, 'e', 3)
+        myfun.create_button(self.__newWindow, '#6fdaed', 'Anuluj', self.__helveticaTwelve, self.destroy_task_windows, 280, 380, 'e', 3)
+        # self.notification_window()
 
     def notification_window(self):
+        self.__notifWindow.deiconify()
         if self.__option.get() == 'TAK':
             self.__date = DateEntry(self.__notifWindow, width=30, bg="black", fg="white", year=datetime.now().year)
             self.__date.place(x=150, y=40, anchor="center")
             self.time_picker(self.__notifWindow)
             self.__notification_gap = tk.StringVar(self.__notifWindow, 'ONCE')
 
-            create_radiobutton(self.__notifWindow, "Jeden raz", self.__notification_gap, 'ONCE', 50, 200, 'center')
-            create_radiobutton(self.__notifWindow, "Co tydzień", self.__notification_gap, 'WEEK', 150, 200, 'center')
-            create_radiobutton(self.__notifWindow, "Co miesiąc", self.__notification_gap, 'MONTH', 250, 200, 'center')
-            create_radiobutton(self.__notifWindow, "Co rok", self.__notification_gap, 'YEAR', 100, 230, 'center')
-            create_radiobutton(self.__notifWindow, "Co ile dni", self.__notification_gap, 'CUSTOM', 200, 230, 'center')
-            self.__repeatNotif = create_entry(self.__notifWindow, 270, 230, 'center', 20, 20)
-            create_label(self.__notifWindow, 'Ilość powtórzeń (0, jeśli w nieskończoność):', ('Helvetica', 8), tk.NW, 20, 250, 'nw')
-            self.__howManyRepeats = create_entry(self.__notifWindow, 270, 260, 'center', 30, 20)
+            myfun.create_radiobutton(self.__notifWindow, "Jeden raz", self.__notification_gap, 'ONCE', 50, 200, 'center')
+            myfun.create_radiobutton(self.__notifWindow, "Co tydzień", self.__notification_gap, 'WEEK', 150, 200, 'center')
+            myfun.create_radiobutton(self.__notifWindow, "Co miesiąc", self.__notification_gap, 'MONTH', 250, 200, 'center')
+            myfun.create_radiobutton(self.__notifWindow, "Co rok", self.__notification_gap, 'YEAR', 100, 230, 'center')
+            myfun.create_radiobutton(self.__notifWindow, "Co ile dni", self.__notification_gap, 'CUSTOM', 200, 230, 'center')
+            self.__repeatNotif = myfun.create_entry(self.__notifWindow, 270, 230, 'center', 20, 20)
+            myfun.create_label(self.__notifWindow, 'Ilość powtórzeń (0, jeśli w nieskończoność):', ('Helvetica', 8), tk.NW, 20, 250, 'nw')
+            self.__howManyRepeats = myfun.create_entry(self.__notifWindow, 270, 260, 'center', 30, 20)
 
-            create_button(self.__notifWindow, '#6fdaed', 'Zatwierdź', self.__helveticaTwelve, self.submit_task, 120, 380, 'e', 3)
-            create_button(self.__notifWindow, '#6fdaed', 'Anuluj', self.__helveticaTwelve, self.__notifWindow.iconify, 280, 380, 'e', 3)
+            myfun.create_button(self.__notifWindow, '#6fdaed', 'Zatwierdź', self.__helveticaTwelve, self.submit_task, 120, 380, 'e', 3)
+            myfun.create_button(self.__notifWindow, '#6fdaed', 'Anuluj', self.__helveticaTwelve, self.__notifWindow.iconify, 280, 380, 'e', 3)
         else:
             messagebox.showinfo('Ostrzeżenie', 'Aby ustawić przypomnienie zaznacz opcje \"TAK\" w opcji \"Przypomnienie\"')
 
@@ -240,10 +242,10 @@ class App(tk.Frame):
 
         if title and task:
             if title[0].isalpha() or title[0].isdigit():
-                if checkTitle(title):
+                if mydb.checkTitle(title):
                     messagebox.showerror('Nieprawidłowe dane', 'Istnieje już zadanie o takim tytule!')
                 else:
-                    if notification and compare_dates(self.__date.get_date(), hour, minute):
+                    if notification and myfun.compare_dates(self.__date.get_date(), hour, minute):
                         notification_gap = self.__notification_gap.get()
                         howManyRepeats = self.__howManyRepeats.get("1.0", 'end-1c')
 
@@ -254,11 +256,11 @@ class App(tk.Frame):
                                 if not self.__repeatNotif.get("1.0", 'end-1c'):
                                     messagebox.showerror('Nieprawidłowe dane', 'Nie podano co ile dni ma być wyświetlane przypomnienie!')
                                 else:
-                                    add_task(addTask, title, task, date, hour, minute, howManyRepeats, notification_gap, self.__repeatNotif.get("1.0", 'end-1c'))
+                                    myfun.add_task(mydb.addTask, title, task, date, hour, minute, howManyRepeats, notification_gap, self.__repeatNotif.get("1.0", 'end-1c'))
                             else:
-                                add_task(addTask, title, task, date, hour, minute, howManyRepeats, notification_gap)
+                                myfun.add_task(mydb.addTask, title, task, date, hour, minute, howManyRepeats, notification_gap)
                     elif not notification:
-                        addTask(title, task, '')
+                        mydb.addTask(title, task, '')
             else:
                 messagebox.showerror('Nieprawidłowe dane', 'Tytuł zadania musi zaczynać się cyfrą lub literą')
         else:
@@ -267,15 +269,20 @@ class App(tk.Frame):
         self.destroy_task_windows()
 
     def check_notification(self):
+        next_date_to_check = myfun.get_actual_date_with_time()
         while self.__appRunning:
             if not self.__focus_check:
                 self.__root.lift()
                 self.__root.attributes('-topmost', True)
                 self.__root.attributes('-topmost', False)
             if self.__allTask:
-                for task in self.__allTask:
-                    if task.compareDatetime(update_notification):
-                        self.update_task_box()
+                if next_date_to_check == myfun.get_actual_date_with_time():
+                    for task in self.__allTask:
+                        if task.compareDatetime(mydb.update_notification):
+                            self.update_task_box()
+                    next_date_to_check += timedelta(seconds=60)
+                elif next_date_to_check < myfun.get_actual_date_with_time():
+                    next_date_to_check += timedelta(seconds=60)
             sleep(5)
 
 app = App()
