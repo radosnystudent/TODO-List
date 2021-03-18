@@ -18,6 +18,9 @@ class Task:
     def getTask(self) -> str:
         return self.__task
 
+    def getNotification(self):
+        return self.__notification
+
     def getNotificationDate(self) -> str:
         if self.__notification:
             string = f'Następne powiadomienie: {self.__datetime["day"]}-{self.__datetime["month"]}-{self.__datetime["year"]} {self.__datetime["hour"]}:{self.__datetime["minute"]}\n'

@@ -3,6 +3,12 @@ from datetime import datetime, timedelta
 import calendar
 from dateutil import relativedelta
 
+def find_task_by_title(title, allTask):
+    for task in allTask:
+        if title == task.getTitle():
+            return task
+    return None
+
 def get_actual_date_with_time():
     return datetime.strptime(datetime.now().isoformat(timespec='minutes', sep=' '), '%Y-%m-%d %H:%M')
 

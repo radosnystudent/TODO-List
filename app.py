@@ -122,13 +122,12 @@ class App(tk.Frame):
                 value = self.__titleBox.get(self.__titleBox.curselection())
                 value = value[value.index(')') + 1:].lstrip()
                 index = None
-                print(self.__allTask)
-                for task in self.__allTask:
-                    if task.getTitle() == value:
-                        index = self.__allTask.index(task)
-                self.__allTask.remove(self.__allTask[index])
-                mydb.deleteTask(value)
-                self.update_task_box()
+                task = myfun.find_task_by_title(value, self.__allTask)
+                if task:
+                    index = self.__allTask.index(task)
+                    self.__allTask.remove(self.__allTask[index])
+                    mydb.deleteTask(value)
+                    self.update_task_box()
         except Exception as ex:
             messagebox.showerror('Błąd. Nieprawidłowe dane.', 'Nie wybrałeś żadnego zadania do usunięcia!')
 
@@ -146,13 +145,18 @@ class App(tk.Frame):
                 self.__titleBox.itemconfig(self.__allTask.index(task), foreground='red')
 
     def edit_task(self):
-        self.__editWindow = tk.Toplevel(self.__root)
-        self.__editWindow.title('Edytuj zadanie')
-        self.__editWindow.geometry(f'{300}x{400}+{int(self.__editWindow.winfo_screenwidth() / 3)}+{int(self.__editWindow.winfo_screenheight() / 3)}')
-        self.__editWindow.resizable(False, False)
-        # myfun.create_button(self.__editWindow, '#6fdaed', 'Edytuj tytuł', self.__helveticaTwelve, print(':)'), 20, 10, 'nw', 3)
-        # myfun.create_button(self.__editWindow, '#6fdaed', 'Edytuj treść', self.__helveticaTwelve, print(':)'), 20, 50, 'nw', 3)
-        # myfun.create_button(self.__editWindow, '#6fdaed', 'Edytuj powiadomienie', self.__helveticaTwelve, print(':)'), 20, 90, 'nw', 3)
+        try:
+            title = self.__titleBox.get(self.__titleBox.curselection())
+            title = title[title.index(')') + 1:].lstrip()
+            task = myfun.find_task_by_title(title, self.__allTask)
+            task_info = {}
+            if task:
+                task_info['title'] = title
+                task_info['task'] = task.getTask()
+                task_info['notif'] = task.getNotification()
+                self.new_window(task_info)
+        except Exception as ex:
+            messagebox.showerror('Błąd. Nieprawidłowe dane.', 'Nie wybrałeś żadnego zadania do edycji!')
 
     def destroy_app(self):
         self.__appRunning = False
@@ -162,7 +166,12 @@ class App(tk.Frame):
         self.__root.destroy()
 
     def new_window(self, edit=None):
-        self.__newWindow = myfun.create_new_window_object('Dodaj zadanie', f'{300}x{400}', False)
+        charCount = tk.StringVar()
+        if not edit:
+            self.__newWindow = myfun.create_new_window_object('Dodaj zadanie', f'{300}x{400}', False)
+        else:
+            self.__newWindow = myfun.create_new_window_object('Edytuj zadanie', f'{300}x{400}', False)
+
         self.__notifWindow = myfun.create_new_window_object('Ustaw przypomnienie', f'{300}x{400}', False)
 
         self.__notifWindow.iconify()
@@ -170,21 +179,34 @@ class App(tk.Frame):
         myfun.create_label(self.__newWindow, 'Nazwa zadania', self.__helveticaTwelve, tk.CENTER, 150, 15, 'center')
         self.__title_entry = myfun.create_entry(self.__newWindow, 150, 45, 'center', 100, 30)
 
+        charTitleCounter = tk.Label(self.__newWindow, textvariable=charCount)
+        charTitleCounter.place(x=250, y=45, anchor='center')
+
         myfun.create_label(self.__newWindow, 'Treść', self.__helveticaTwelve, tk.CENTER, 150, 81, 'center')
         self.__task_entry = myfun.create_entry(self.__newWindow, 150, 135, 'center', 200, 90)
 
+        if edit is not None:
+            self.__title_entry.insert('1.0', edit['title'])
+            self.__task_entry.insert('1.0', edit['task'])
+
         myfun.create_label(self.__newWindow, 'Przypomnienie', self.__helveticaTwelve, tk.CENTER, 150, 200, 'center')
-        self.__option = tk.StringVar(self.__newWindow, 'TAK')
+        if edit is not None:
+            self.__option = tk.StringVar(self.__newWindow, 'NIE')
+        else:
+            self.__option = tk.StringVar(self.__newWindow, 'TAK')
+
+        def update_counter(event):
+            charCount.set(str(len(self.__title_entry.get('1.0', 'end-1c'))) + '/20')
+
+        self.__title_entry.bind("<KeyRelease>", update_counter)
 
         myfun.create_radiobutton(self.__newWindow, "Tak", self.__option, 'TAK', 130, 240, 'center')
         myfun.create_radiobutton(self.__newWindow, "Nie", self.__option, 'NIE', 170, 240, 'center')
 
-        # myfun.create_button(self.__newWindow, '#6fdaed', 'Ustaw przypomnienie', self.__helveticaTwelve, self.__notifWindow.deiconify, 150, 300, 'center', 3)
         myfun.create_button(self.__newWindow, '#6fdaed', 'Ustaw przypomnienie', self.__helveticaTwelve, self.notification_window, 150, 300, 'center', 3)
 
         myfun.create_button(self.__newWindow, '#6fdaed', 'Zatwierdź', self.__helveticaTwelve, self.submit_task, 120, 380, 'e', 3)
         myfun.create_button(self.__newWindow, '#6fdaed', 'Anuluj', self.__helveticaTwelve, self.destroy_task_windows, 280, 380, 'e', 3)
-        # self.notification_window()
 
     def notification_window(self):
         self.__notifWindow.deiconify()
@@ -241,28 +263,31 @@ class App(tk.Frame):
         minute = self.__minstr.get() if int(self.__minstr.get()) >= 10 else "0" + self.__minstr.get()
 
         if title and task:
-            if title[0].isalpha() or title[0].isdigit():
-                if mydb.checkTitle(title):
-                    messagebox.showerror('Nieprawidłowe dane', 'Istnieje już zadanie o takim tytule!')
-                else:
-                    if notification and myfun.compare_dates(self.__date.get_date(), hour, minute):
-                        notification_gap = self.__notification_gap.get()
-                        howManyRepeats = self.__howManyRepeats.get("1.0", 'end-1c')
-
-                        if not howManyRepeats and notification_gap != "Jeden raz":
-                            messagebox.showerror('Nieprawidłowe dane', 'Nie podano liczby powtórzeń wydarzenia')
-                        else:
-                            if notification_gap == 'CUSTOM':
-                                if not self.__repeatNotif.get("1.0", 'end-1c'):
-                                    messagebox.showerror('Nieprawidłowe dane', 'Nie podano co ile dni ma być wyświetlane przypomnienie!')
-                                else:
-                                    myfun.add_task(mydb.addTask, title, task, date, hour, minute, howManyRepeats, notification_gap, self.__repeatNotif.get("1.0", 'end-1c'))
-                            else:
-                                myfun.add_task(mydb.addTask, title, task, date, hour, minute, howManyRepeats, notification_gap)
-                    elif not notification:
-                        mydb.addTask(title, task, '')
+            if len(title) > 20:
+                messagebox.showerror('Nieprawidłowe dane', 'Tytuł zadania nie może mieć więcej niż 20 znaków')
             else:
-                messagebox.showerror('Nieprawidłowe dane', 'Tytuł zadania musi zaczynać się cyfrą lub literą')
+                if title[0].isalpha() or title[0].isdigit():
+                    if mydb.checkTitle(title):
+                        messagebox.showerror('Nieprawidłowe dane', 'Istnieje już zadanie o takim tytule!')
+                    else:
+                        if notification and myfun.compare_dates(self.__date.get_date(), hour, minute):
+                            notification_gap = self.__notification_gap.get()
+                            howManyRepeats = self.__howManyRepeats.get("1.0", 'end-1c')
+
+                            if not howManyRepeats and notification_gap != "Jeden raz":
+                                messagebox.showerror('Nieprawidłowe dane', 'Nie podano liczby powtórzeń wydarzenia')
+                            else:
+                                if notification_gap == 'CUSTOM':
+                                    if not self.__repeatNotif.get("1.0", 'end-1c'):
+                                        messagebox.showerror('Nieprawidłowe dane', 'Nie podano co ile dni ma być wyświetlane przypomnienie!')
+                                    else:
+                                        myfun.add_task(mydb.addTask, title, task, date, hour, minute, howManyRepeats, notification_gap, self.__repeatNotif.get("1.0", 'end-1c'))
+                                else:
+                                    myfun.add_task(mydb.addTask, title, task, date, hour, minute, howManyRepeats, notification_gap)
+                        elif not notification:
+                            mydb.addTask(title, task, '')
+                else:
+                    messagebox.showerror('Nieprawidłowe dane', 'Tytuł zadania musi zaczynać się cyfrą lub literą')
         else:
             messagebox.showerror('Niepełne dane', 'Musisz podać tytuł i treść zadania.')
         self.update_task_box()
