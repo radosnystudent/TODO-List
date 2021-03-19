@@ -51,6 +51,16 @@ def update_notification(title, date, occure_gap, repeat):
     with lsc:
         lsc.get_cursor().execute('UPDATE notification SET date = ?, occure_gap = ?, repeat = ? WHERE task_id = (SELECT id FROM tasks WHERE title = ?)', (date, occure_gap, repeat, title,))
 
+def update_task(previous_title, title, task, date=None, occure_gap=None, repeat=None):
+    lsc = MyDatabase()
+    with lsc:
+        result = lsc.get_cursor().execute('SELECT id FROM tasks WHERE title = ?', (previous_title,))
+        task_id = result.fetchone()[0]
+        lsc.get_cursor().execute('UPDATE tasks SET title = ?, task = ?, readed = ? WHERE id = ?', (title, task, 0, task_id,))
+    if date:
+        update_notification(title, date, occure_gap, repeat)
+
+
 def checkTitle(title: str):
     lsc = MyDatabase()
     with lsc:

@@ -19,7 +19,7 @@ class Task:
         return self.__task
 
     def getNotification(self):
-        return self.__notification
+        return [self.__notification, self.__datetime, self.__occure_gap, self.__repeat]
 
     def getNotificationDate(self) -> str:
         if self.__notification:

@@ -82,7 +82,7 @@ def create_label(master, text: str, font: str, anchor, x: int, y: int, placeAnch
     return label
 
 
-def add_task(callback: callable, title: str, task: str, date: list, hour: str, minute: str, howManyRepeats: str, notification_gap: str, custom_repeat=None):
+def add_task(callback: callable, title: str, task: str, date: list, hour: str, minute: str, howManyRepeats: str, notification_gap: str, custom_repeat=None, edit=None):
     if notification_gap == 'CUSTOM':
         occure_gap = notification_gap + str(custom_repeat)
     else:
@@ -94,5 +94,7 @@ def add_task(callback: callable, title: str, task: str, date: list, hour: str, m
         repeat = int(howManyRepeats)
 
     dateWithTime = f'{date[2]}/{date[1]}/{date[0]}/{hour}/{minute}'
-
-    callback(title, task, dateWithTime, occure_gap, repeat)
+    if edit:
+        callback(edit['title'], title, task, dateWithTime, occure_gap, repeat)
+    else:
+        callback(title, task, dateWithTime, occure_gap, repeat)
